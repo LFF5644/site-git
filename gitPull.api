@@ -1,0 +1,44 @@
+<?
+const os=require("os");
+function send(text){
+	?><?=text?><?
+}
+let result="-- git pull --\n";
+if(os.hostname()=="LFF-MiniBook"){send("ERROR: not allowed on devServer!");
+	return;
+}
+let dir;
+const child_process=require("child_process");
+const {
+	ReadDir,
+	ReadFile,
+	GetLine,
+}=globals.functions;
+for(dir of ReadDir("public/p")){
+	const p=dir;
+	dir="public/p/"+dir;
+	let config=ReadFile(dir+"/config.ini");
+	if(!config){
+		result+=`SKIP: "/${p}" no config.ini exist\n`;
+		continue;
+	}
+
+	const git=GetLine(config,"git","simple");
+	const gitRepository=GetLine(config,"gitRepository","simple");
+	
+	if(git=="ERROR lineRead is not in fileText!"){
+		result+=`SKIP: "/${p}" no gitKey exist in config.ini\n`
+		continue;
+	}
+	if(gitRepository=="ERROR lineRead is not in fileText!"){
+		result+=`SKIP: "/${p}" no gitRepository exist in config.ini\n`
+		continue;
+	}
+	
+	result+=`PULL: "/${p}" <-- https://github.com/${gitRepository}\n`
+	try{child_process.execSync(`cd ${dir}; git pull -f`);}
+	catch(e){
+		result+=`ERR: "/${p}" <-- https://github.com/${gitRepository} CANT PULL!\n`
+	}
+}
+?><?=result?>
