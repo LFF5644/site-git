@@ -1,44 +1,78 @@
 <?
-const os=require("os");
+const {hostname}=require("os");
+const {exec}=require("child_process");
+const {
+	ReadDir,
+	ReadJsonFile
+}=globals.functions;
+
+const projectsFolder="public/p";
+
+function run(cmd){return new Promise(r=>{
+	exec(cmd,(error,stdout,stderr)=>r(stdout));
+})}
+
 function send(text){
 	?><?=text?><?
 }
-let result="-- git pull --\n";
-if(os.hostname()=="LFF-MiniBook"){send("ERROR: not allowed on devServer!");
+function getGitProjects(){
+	return ReadDir(projectsFolder)
+		.filter(item=>
+			ReadDir(projectsFolder+"/"+item).includes(".git")
+		)
+		.map(item=>projectsFolder+"/"+item)
+}
+actions.gitPullApi_pull={
+	display:"Pullen",
+	service:null,
+	servicename:null,
+	action:()=>log("log this cam in an update..."),
+	enabled:false,
+}
+if(hostname()!="lff-raspberrypi"){
+	send("ERROR: not allowed on devServer!");
+	log("pull is not allowed on dev server!");
 	return;
 }
-let dir;
-const child_process=require("child_process");
-const {
-	ReadDir,
-	ReadFile,
-	GetLine,
-}=globals.functions;
-for(dir of ReadDir("public/p")){
-	const p=dir;
-	dir="public/p/"+dir;
-	let config=ReadFile(dir+"/config.ini");
-	if(!config){
-		result+=`SKIP: "/${p}" no config.ini exist\n`;
-		continue;
-	}
+const pullJson=ReadJsonFile("config/pull.json")||[];
+const projects=getGitProjects();
+const paths=[
+	...projects,
+	...pullJson,
+];
+send("Gefundene Projekte: "+projects.length+"\n");
+send("Geladene Ordner: "+pullJson.length+"\n");
+send("Pull Paths: "+paths.length+"\n\n");
 
-	const git=GetLine(config,"git","simple");
-	const gitRepository=GetLine(config,"gitRepository","simple");
-	
-	if(git=="ERROR lineRead is not in fileText!"){
-		result+=`SKIP: "/${p}" no gitKey exist in config.ini\n`
-		continue;
+let path;
+for(path of paths){
+	const pullRes=await run(`cd "${path}"; git pull`);
+	send(`${path}: `);
+	if(pullRes.includes("Kein Git-Repository")){
+		log(path+": Kein Git-Repository!");
+		send("ERROR: Kein Git-Repository gefunden!");
 	}
-	if(gitRepository=="ERROR lineRead is not in fileText!"){
-		result+=`SKIP: "/${p}" no gitRepository exist in config.ini\n`
-		continue;
+	else if(
+		pullRes.includes("error: Ihre lokalen Änderungen in den folgenden Dateien würden durch den Merge")||
+		pullRes.includes("error: Your local changes to the following files would be overwritten by merge")||
+		pullRes.includes("Aktualisiere ")
+	){
+		log(path+"ERROR: lokale Änderungen stehen before!");
+		send("ERROR: lokale Änderungen müssen commitet werden!");
 	}
-	
-	result+=`PULL: "/${p}" <-- https://github.com/${gitRepository}\n`
-	try{child_process.execSync(`cd ${dir}; git pull -f`);}
-	catch(e){
-		result+=`ERR: "/${p}" <-- https://github.com/${gitRepository} CANT PULL!\n`
+	else if(pullRes.includes("Bereits aktuell.")){
+		send("Aktuell!");
 	}
+	else if(pullRes.includes("Empfange Objekte: 100%")){
+		send("Pulle von GitHub");
+	}
+	else if(pullRes.includes("Es gibt keine Tracking-Informationen für den aktuellen Branch.")){
+		send("Keine Tracking-Informationen!")
+	}
+	else{
+		send("UNBEKANTE AUSGABE: "+pullRes)
+	}
+	send("\n");
 }
-?><?=result?>
+
+?>
