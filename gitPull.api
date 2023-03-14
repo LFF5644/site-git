@@ -3,7 +3,9 @@ const {hostname}=require("os");
 const {exec}=require("child_process");
 const {
 	ReadDir,
-	ReadJsonFile
+	ReadFile,
+	ReadJsonFile,
+	GetLineSimple,
 }=globals.functions;
 
 const projectsFolder="public/p";
@@ -16,11 +18,12 @@ function send(text){
 	?><?=text?><?
 }
 function getGitProjects(){
-	return ReadDir(projectsFolder)
+	return(ReadDir(projectsFolder)
 		.filter(item=>
 			ReadDir(projectsFolder+"/"+item).includes(".git")
 		)
 		.map(item=>projectsFolder+"/"+item)
+	);
 }
 actions.gitPullApi_pull={
 	display:"Pullen",
@@ -28,7 +31,7 @@ actions.gitPullApi_pull={
 	servicename:null,
 	action:()=>log("log this cam in an update..."),
 	enabled:false,
-}
+};
 if(hostname()!="lff-raspberrypi"){
 	send("ERROR: not allowed on devServer!");
 	log("pull is not allowed on dev server!");
@@ -44,18 +47,30 @@ send("Gefundene Projekte: "+projects.length+"\n");
 send("Geladene Ordner: "+pullJson.length+"\n");
 send("Pull Paths: "+paths.length+"\n\n");
 
-let path;
-for(path of paths){
+for(let path of paths){
+	const config=ReadFile(path+"/config.ini");
+
+	if(config){
+		const buildFile=GetLineSimple(config,"build");
+		if(buildFile){
+			if(buildFile=="$internal"){
+				log("running internal build file for "+path);
+				exec(`node public/server/git/build.js "${path}"`);
+			}else{
+				log("running external build file "+buildFile+" for "+path);
+				exec(`node ${path}/${buildFile} "${path}"`);
+			}
+		}
+	}
 	const pullRes=await run(`cd "${path}"; git pull`);
-	send(`${path}: `);
+	send(path+": ");
 	if(pullRes.includes("Kein Git-Repository")){
 		log(path+": Kein Git-Repository!");
 		send("ERROR: Kein Git-Repository gefunden!");
 	}
 	else if(
 		pullRes.includes("error: Ihre lokalen Änderungen in den folgenden Dateien würden durch den Merge")||
-		pullRes.includes("error: Your local changes to the following files would be overwritten by merge")||
-		pullRes.includes("Aktualisiere ")
+		pullRes.includes("error: Your local changes to the following files would be overwritten by merge")
 	){
 		log(path+"ERROR: lokale Änderungen stehen before!");
 		send("ERROR: lokale Änderungen müssen commitet werden!");
@@ -63,14 +78,17 @@ for(path of paths){
 	else if(pullRes.includes("Bereits aktuell.")){
 		send("Aktuell!");
 	}
-	else if(pullRes.includes("Empfange Objekte: 100%")){
+	else if(
+		pullRes.includes("Empfange Objekte: 100%")||
+		pullRes.includes("Aktualisiere ")
+	){
 		send("Pulle von GitHub");
 	}
 	else if(pullRes.includes("Es gibt keine Tracking-Informationen für den aktuellen Branch.")){
-		send("Keine Tracking-Informationen!")
+		send("Keine Tracking-Informationen!");
 	}
 	else{
-		send("UNBEKANTE AUSGABE: "+pullRes)
+		send("UNBEKANTE AUSGABE: "+pullRes);
 	}
 	send("\n");
 }
