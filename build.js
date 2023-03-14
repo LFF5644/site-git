@@ -19,7 +19,7 @@ execSync("mkdir build");
 for(let item of build){
 	if(item.type=="google-closure-compiler"){
 		console.log(`Compile ${item.file} to ${item.language}`);
-		execSync(`${item.type} --language_out "${item.language}" --js_output_file "build/${item.file}" "${item.file}"`);
+		execSync(`${item.type} --language_out "${item.language}" --js "${item.file}" --js_output_file "build/${item.file}"`);
 	}else{
 		console.log("not allowed type "+item.type);
 	}
