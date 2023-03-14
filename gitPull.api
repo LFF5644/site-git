@@ -48,20 +48,6 @@ send("Geladene Ordner: "+pullJson.length+"\n");
 send("Pull Paths: "+paths.length+"\n\n");
 
 for(let path of paths){
-	const config=ReadFile(path+"/config.ini");
-
-	if(config){
-		const buildFile=GetLineSimple(config,"build");
-		if(buildFile){
-			if(buildFile=="$internal"){
-				log("running internal build file for "+path);
-				exec(`node public/server/git/build.js "${path}"`);
-			}else{
-				log("running external build file "+buildFile+" for "+path);
-				exec(`node ${path}/${buildFile} "${path}"`);
-			}
-		}
-	}
 	const pullRes=await run(`cd "${path}"; git pull`);
 	send(path+": ");
 	if(pullRes.includes("Kein Git-Repository")){
@@ -73,7 +59,7 @@ for(let path of paths){
 		pullRes.includes("error: Your local changes to the following files would be overwritten by merge")
 	){
 		log(path+"ERROR: lokale Änderungen stehen before!");
-		send("ERROR: lokale Änderungen müssen commitet werden!");
+		send("ERROR: lokale Änderungen müssen committed werden!");
 	}
 	else if(pullRes.includes("Bereits aktuell.")){
 		send("Aktuell!");
@@ -91,6 +77,20 @@ for(let path of paths){
 		send("UNBEKANTE AUSGABE: "+pullRes);
 	}
 	send("\n");
+
+	const config=ReadFile(path+"/config.ini");
+	if(config){
+		const buildFile=GetLineSimple(config,"build");
+		if(buildFile){
+			if(buildFile=="$internal"){
+				log("running internal build file for "+path);
+				await run(`node public/server/git/build.js "${path}"`);
+			}else{
+				log("running external build file "+buildFile+" for "+path);
+				await run(`node ${path}/${buildFile} "${path}"`);
+			}
+		}
+	}
 }
 
 ?>
