@@ -11,7 +11,7 @@ const {
 const projectsFolder="public/p";
 
 function run(cmd){return new Promise(r=>{
-	exec(cmd,(error,stdout,stderr)=>r(stdout));
+	exec(cmd,(error,stdout,stderr)=>r(error+stderr+stdout));
 })}
 
 function send(text){

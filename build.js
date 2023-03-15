@@ -17,7 +17,9 @@ const path=process.cwd();
 
 process.chdir(process.argv[2]||".");
 const build=getBuildJson();
-execSync("mkdir build");
+try{
+	execSync("mkdir build");
+}catch(e){}
 
 for(let item of build){
 	if(item.type=="google-closure-compiler"){
