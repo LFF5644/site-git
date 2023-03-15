@@ -63,16 +63,19 @@ for(let path of paths){
 		send("ERROR: lokale Änderungen müssen committed werden!");
 		status.error=true;
 	}
-	else if(pullRes.includes("Bereits aktuell.")){
+	else if(
+		pullRes.includes("Bereits aktuell.")||
+		pullRes.includes("Already up to date.")
+	){
 		send("Aktuell!");
-		log(path+" => Ok");
+		log(path+" => Ok!");
 	}
 	else if(
 		pullRes.includes("Empfange Objekte: 100%")||
 		pullRes.includes("Aktualisiere ")
 	){
 		send("Pulle von GitHub");
-		log(path+" => Pull ...");
+		log(path+" => PULL ...");
 		status.pull=true;
 	}
 	else if(pullRes.includes("Es gibt keine Tracking-Informationen für den aktuellen Branch.")){
