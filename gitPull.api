@@ -46,53 +46,64 @@ const paths=[
 send("Gefundene Projekte: "+projects.length+"\n");
 send("Geladene Ordner: "+pullJson.length+"\n");
 send("Pull Paths: "+paths.length+"\n\n");
-
+log("START GIT PULL.......");
 for(let path of paths){
 	const pullRes=await run(`cd "${path}"; git pull`);
+	const status={error:false,pull:false};
 	send(path+": ");
 	if(pullRes.includes("Kein Git-Repository")){
-		log(path+": Kein Git-Repository!");
+		log(path+" => ERROR: Kein Git-Repository!");
 		send("ERROR: Kein Git-Repository gefunden!");
 	}
 	else if(
 		pullRes.includes("error: Ihre lokalen Änderungen in den folgenden Dateien würden durch den Merge")||
 		pullRes.includes("error: Your local changes to the following files would be overwritten by merge")
 	){
-		log(path+"ERROR: lokale Änderungen stehen before!");
+		log(path+" => ERROR: lokale Änderungen stehen before!");
 		send("ERROR: lokale Änderungen müssen committed werden!");
+		status.error=true;
 	}
 	else if(pullRes.includes("Bereits aktuell.")){
 		send("Aktuell!");
+		log(path+" => Ok");
 	}
 	else if(
 		pullRes.includes("Empfange Objekte: 100%")||
 		pullRes.includes("Aktualisiere ")
 	){
 		send("Pulle von GitHub");
+		log(path+" => Pull ...");
+		status.pull=true;
 	}
 	else if(pullRes.includes("Es gibt keine Tracking-Informationen für den aktuellen Branch.")){
 		send("Keine Tracking-Informationen!");
+		log(path+" => ERROR: Keine Tracking-Informationen!");
+		status.error=true;
 	}
 	else{
 		send("UNBEKANTE AUSGABE: "+pullRes);
+		log(path+" => UNBEKANTE AUSGABE: "+pullRes);
 	}
-	send("\n");
 
 	const config=ReadFile(path+"/config.ini");
 	if(config){
 		const buildFile=GetLineSimple(config,"build");
+		build:
 		if(buildFile){
+			if(!input.alwaysBuild&&!status.pull){break build;}
 			if(buildFile=="$internal"){
-				log("running internal build file for "+path);
-				const build=await run(`node public/server/git/build.js "${path}"`);
-				log(build);
+				log(path+" => build (internal) ...");
+				send("; build ...");
+				await run(`node public/server/git/build.js "${path}"`);
 			}else{
-				log("running external build file "+buildFile+" for "+path);
-				const build=await run(`node ${path}/${buildFile} "${path}"`);
-				log(build);
+				log(path+" => build ("+buildFile+") ...");
+				send("; build "+buildFile+" ...");
+				await run(`node ${path}/${buildFile} "${path}"`);
 			}
 		}
 	}
+	send("\n");
 }
+log("GIT PULL FINISHED!!!");
 
 ?>
