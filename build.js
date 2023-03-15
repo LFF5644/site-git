@@ -13,6 +13,8 @@ function getBuildJson(){
 	return build;
 }
 
+const path=process.cwd();
+
 process.chdir(process.argv[2]||".");
 const build=getBuildJson();
 execSync("mkdir build");
@@ -20,7 +22,7 @@ execSync("mkdir build");
 for(let item of build){
 	if(item.type=="google-closure-compiler"){
 		console.log(`Compile ${item.file} to ${item.language}`);
-		execSync(`${item.type} --language_out "${item.language}" --js "${item.file}" --js_output_file "build/${item.file}"`);
+		console.log(execSync(`${item.type} --language_out "${item.language}" --js "${item.file}" --js_output_file "build/${item.file}"`).toString());
 	}else{
 		console.log("not allowed type "+item.type);
 	}

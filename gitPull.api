@@ -84,10 +84,12 @@ for(let path of paths){
 		if(buildFile){
 			if(buildFile=="$internal"){
 				log("running internal build file for "+path);
-				await run(`node public/server/git/build.js "${path}"`);
+				const build=await run(`node public/server/git/build.js "${path}"`);
+				log(build);
 			}else{
 				log("running external build file "+buildFile+" for "+path);
-				await run(`node ${path}/${buildFile} "${path}"`);
+				const build=await run(`node ${path}/${buildFile} "${path}"`);
+				log(build);
 			}
 		}
 	}
