@@ -1,3 +1,4 @@
+#!/bin/env node
 const {writeFileSync,readFileSync}=require("fs");
 const {execSync}=require("child_process");
 
