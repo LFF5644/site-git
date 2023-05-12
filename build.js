@@ -36,6 +36,7 @@ for(let item of build){
 		cmd+=` --js_output_file "build/${item.file}"`;
 		cmd+=` --language_out "${item.language}"`;
 		cmd+=item.polyfills?"":" --rewrite_polyfills false";
+		console.log("COMD:",cmd);
 		console.log(execSync(cmd).toString("utf-8"));
 	}else{
 		console.log("not allowed type "+item.type);
