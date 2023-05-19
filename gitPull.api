@@ -32,7 +32,7 @@ actions.gitPullApi_pull={
 	action:()=>log("log this cam in an update..."),
 	enabled:false,
 };
-if(hostname()!="lff-raspberrypi"){
+if(hostname()!=="lff-raspberrypi"){
 	send("ERROR: not allowed on devServer!");
 	log("pull is not allowed on dev server!");
 	return;

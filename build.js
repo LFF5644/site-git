@@ -25,7 +25,7 @@ for(let item of build){
 	item={
 		type: null,
 		file: null,
-		language: "ECMASCRIPT3_STRICT",
+		language: "ECMASCRIPT3",
 		polyfills: true,
 		...item,
 	};
